@@ -1,14 +1,14 @@
 import numpy as np
-from scipy import ndimage, stats, interpolate
+from scipy import ndimage, stats
 
 
-def normalize_gradient(grad):
-    """Normalizes a gradient vector.
+def normalized_vector(vector):
+    """Normalizes a vector field.
 
     Parameters
     ----------
-    grad : numpy.array
-        The input gradient.
+    vector : numpy.array
+        The input vector field (ndim, ...).
 
     Returns
     -------
@@ -16,10 +16,10 @@ def normalize_gradient(grad):
         Normalized gradient.
 
     """
-    norm_grad = np.linalg.norm(grad, axis=0)
-    cond = norm_grad > 0
-    grad[:, cond] = grad[:, cond] / norm_grad[cond]
-    return grad
+    norm = np.linalg.norm(vector, axis=0)
+    cond = norm > 0
+    vector[:, cond] = vector[:, cond] / norm[cond]
+    return vector
 
 
 def normalized_gradient(image):
@@ -36,7 +36,7 @@ def normalized_gradient(image):
         The normalized gradient of the image.
     """
     grad = np.array(np.gradient(image.astype(float)))
-    grad = normalize_gradient(grad)
+    grad = normalized_vector(grad)
     return grad
 
 
@@ -66,16 +66,14 @@ def silver_mountain_operator(input, sigma, size):
     return mod
 
 
-class Empiric_RV(stats.rv_continuous):
+class HistogramRV(stats.rv_histogram):
     """Returns a random variable from an array of observations.
 
     data : numpy.array
         Array of observations. If it is multidimensional, it will be flattened.
+    bins : int or str
+        See numpy.histogram.
     """
-    def __init__(self, data):
-        super().__init__()
-        self.x = np.linspace(0, 1, data.size, endpoint=False)
-        self.y = np.sort(data, axis=None)
-        kwargs = {'copy': False, 'assume_sorted': True}
-        self._cdf = interpolate.interp1d(self.y, self.x, bounds_error=False, fill_value=(0., 1.), **kwargs)
-        self._ppf = interpolate.interp1d(self.x, self.y, **kwargs)
+
+    def __init__(self, data, bins='fd'):
+        super().__init__(np.histogram(data, bins=bins))

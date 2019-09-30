@@ -1,6 +1,6 @@
 import numpy as np
 
-from .functions import silver_mountain_operator, Empiric_RV
+from .functions import silver_mountain_operator, HistogramRV
 
 
 def smo_rv(im_shape, sigma, size):
@@ -19,12 +19,43 @@ def smo_rv(im_shape, sigma, size):
 
     Returns
     -------
-    Empiric_RV
+    HistogramRV
         Subclass of scipy.stats.rv_continuous.
     """
     im = np.random.normal(size=im_shape)
     smo = silver_mountain_operator(im, sigma, size)
-    return Empiric_RV(smo)
+    return HistogramRV(smo)
+
+
+def smo_mask(im, sigma, size, threshold=0.1):
+    """Returns the mask of (some) background noise.
+
+    Parameters
+    ----------
+    im : numpy.array
+        Image
+    sigma : scalar or sequence of scalars
+        Standard deviation for Gaussian kernel. The standard
+        deviations of the Gaussian filter are given for each axis as a
+        sequence, or as a single number, in which case it is equal for
+        all axes.
+    size : int or tuple of int
+        Averaging window parameter.
+    threshold : float
+        Percentile value [0, 1] for the SMO distribution.
+
+    Returns
+    -------
+    HistogramRV
+        Subclass of scipy.stats.rv_continuous.
+
+    Notes
+    -----
+    Sigma and size are scale parameters, and should be less than the typical cell size.
+    """
+    smo = silver_mountain_operator(im, sigma, size)
+    threshold = smo_rv(im.shape, sigma, size).ppf(threshold)
+    return smo < threshold
 
 
 def bg_rv(im, sigma, size, threshold=0.1):
@@ -49,14 +80,12 @@ def bg_rv(im, sigma, size, threshold=0.1):
 
     Returns
     -------
-    Empiric_RV
+    HistogramRV
         Subclass of scipy.stats.rv_continuous.
 
     Notes
     -----
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
-    smo = silver_mountain_operator(im, sigma, size)
-    threshold = smo_rv(im.shape, sigma, size).ppf(threshold)
-    mask = (smo < threshold)
-    return Empiric_RV(im[mask])
+    mask = smo_mask(im, sigma, size, threshold=threshold)
+    return HistogramRV(im[mask])
