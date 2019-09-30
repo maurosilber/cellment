@@ -9,5 +9,5 @@ setup(
     author='Mauro Silberberg',
     author_email='maurosilber@gmail.com',
     description='Segmentation of cells from fluorescence microscopy.',
-    install_requires=['numpy', 'scipy']
+    install_requires=['numpy', 'scipy', 'networkx', 'scikit-image']
 )
