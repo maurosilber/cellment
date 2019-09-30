@@ -24,7 +24,7 @@ def smo_rv(im_shape, sigma, size):
     """
     im = np.random.normal(size=im_shape)
     smo = silver_mountain_operator(im, sigma, size)
-    return HistogramRV(smo)
+    return HistogramRV.from_data(smo)
 
 
 def smo_mask(im, sigma, size, threshold=0.1):
@@ -88,4 +88,4 @@ def bg_rv(im, sigma, size, threshold=0.1):
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
     mask = smo_mask(im, sigma, size, threshold=threshold)
-    return HistogramRV(im[mask])
+    return HistogramRV.from_data(im[mask])

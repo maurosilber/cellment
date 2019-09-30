@@ -75,5 +75,15 @@ class HistogramRV(stats.rv_histogram):
         See numpy.histogram.
     """
 
-    def __init__(self, data, bins='fd'):
-        super().__init__(np.histogram(data, bins=bins))
+    @classmethod
+    def from_data(cls, data, bins='fd'):
+        return cls(np.histogram(data, bins=bins))
+
+    def save(self, path):
+        hist, bins = self._histogram
+        np.savez(path, hist=hist, bins=bins)
+
+    @classmethod
+    def load(cls, path):
+        file = np.load(path)
+        return cls((file['hist'], file['bins']))
