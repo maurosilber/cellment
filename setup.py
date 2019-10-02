@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='cellment',
-    version='0.0.1',
+    version='0.0.2',
     packages=['cellment'],
     url='https://github.com/maurosilber/cellment',
     license='MIT',

@@ -58,7 +58,7 @@ def smo_mask(im, sigma, size, threshold=0.1):
     return smo < threshold
 
 
-def bg_rv(im, sigma, size, threshold=0.1):
+def bg_rv(im, sigma, size, im_saturation, threshold=0.1):
     """Returns the distribution of background noise.
 
     Use self.median() to get the median value,
@@ -75,6 +75,8 @@ def bg_rv(im, sigma, size, threshold=0.1):
         all axes.
     size : int or tuple of int
         Averaging window parameter.
+    im_saturation : scalar
+        Value of saturation for image. E.g., 4095 for 12-bit images.
     threshold : float
         Percentile value [0, 1] for the SMO distribution.
 
@@ -87,5 +89,5 @@ def bg_rv(im, sigma, size, threshold=0.1):
     -----
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
-    mask = smo_mask(im, sigma, size, threshold=threshold)
+    mask = smo_mask(im, sigma, size, threshold=threshold) & (im < im_saturation)
     return HistogramRV.from_data(im[mask])
