@@ -20,7 +20,7 @@ def smo_rv(im_shape, sigma, size):
     Returns
     -------
     HistogramRV
-        Subclass of scipy.stats.rv_continuous.
+        Subclass of scipy.stats.rv_histogram.
     """
     im = np.random.normal(size=im_shape)
     smo = silver_mountain_operator(im, sigma, size)
@@ -32,8 +32,8 @@ def smo_mask(im, sigma, size, threshold=0.1):
 
     Parameters
     ----------
-    im : numpy.array
-        Image
+    im : numpy.array or numpy.ma.MaskedArray
+        Image. If there are saturated pixels, they should be masked.
     sigma : scalar or sequence of scalars
         Standard deviation for Gaussian kernel. The standard
         deviations of the Gaussian filter are given for each axis as a
@@ -46,19 +46,19 @@ def smo_mask(im, sigma, size, threshold=0.1):
 
     Returns
     -------
-    HistogramRV
-        Subclass of scipy.stats.rv_continuous.
+    mask : numpy.array
 
     Notes
     -----
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
+    im = np.ma.asarray(im)
     smo = silver_mountain_operator(im, sigma, size)
     threshold = smo_rv(im.shape, sigma, size).ppf(threshold)
-    return smo < threshold
+    return (smo < threshold) & ~im.mask
 
 
-def bg_rv(im, sigma, size, im_saturation, threshold=0.1):
+def bg_rv(im, sigma, size, threshold=0.1):
     """Returns the distribution of background noise.
 
     Use self.median() to get the median value,
@@ -66,8 +66,8 @@ def bg_rv(im, sigma, size, im_saturation, threshold=0.1):
 
     Parameters
     ----------
-    im : numpy.array
-        Image
+    im : numpy.array or numpy.ma.MaskedArray
+        Image. If there are saturated pixels, they should be masked.
     sigma : scalar or sequence of scalars
         Standard deviation for Gaussian kernel. The standard
         deviations of the Gaussian filter are given for each axis as a
@@ -75,19 +75,21 @@ def bg_rv(im, sigma, size, im_saturation, threshold=0.1):
         all axes.
     size : int or tuple of int
         Averaging window parameter.
-    im_saturation : scalar
-        Value of saturation for image. E.g., 4095 for 12-bit images.
     threshold : float
         Percentile value [0, 1] for the SMO distribution.
 
     Returns
     -------
     HistogramRV
-        Subclass of scipy.stats.rv_continuous.
+        Subclass of scipy.stats.rv_histogram.
 
     Notes
     -----
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
-    mask = smo_mask(im, sigma, size, threshold=threshold) & (im < im_saturation)
-    return HistogramRV.from_data(im[mask])
+    mask = smo_mask(im, sigma, size, threshold=threshold)
+    bg = im[mask]
+    # Remove outliers
+    p25, p50 = np.percentile(bg, (25, 50))
+    bg = bg[bg < p50 + 20 * (p50 - p25)]
+    return HistogramRV.from_data(bg)
