@@ -40,7 +40,7 @@ def normalized_gradient(input):
     return normalized_vector(grad, axis=0)
 
 
-def silver_mountain_operator(input, sigma, size):
+def smo(input, sigma, size):
     """Applies the Silver Mountain Operator (SMO) to a scalar field.
 
     Parameters
@@ -62,6 +62,37 @@ def silver_mountain_operator(input, sigma, size):
     sliding_mean = ndimage.uniform_filter(norm_grad, size=(1, *size))
     magnitude = np.linalg.norm(sliding_mean, axis=0)
     return magnitude
+
+
+def smo_rv(ndim, sigma, size, n_samples=1e6):
+    """Generates a random variable of the SMO operator for a given sigma and size.
+
+    Parameters
+    ----------
+    ndim : int
+        Dimension.
+    sigma : scalar or sequence of scalars
+        Standard deviation for Gaussian kernel.
+    size : int or sequence of int
+        Averaging window size.
+    n_samples : int
+        Number of samples to use to compute the distribution.
+
+    Returns
+    -------
+    HistogramRV
+        Subclass of scipy.stats.rv_histogram.
+    """
+    # Check if sigma and size are compatible with ndim
+    sigma = _normalize_sequence(sigma, ndim)
+    size = _normalize_sequence(size, ndim)
+    # Distribute samples across dimensions
+    shape = np.ceil(sigma) * np.ceil(size)
+    shape = np.ceil(shape * np.power(n_samples / np.prod(shape), 1 / ndim)).astype(int)
+
+    im = np.random.random_sample(size=shape)
+    smo_image = smo(im, sigma, size)
+    return HistogramRV.from_data(smo_image)
 
 
 class HistogramRV(stats.rv_histogram):

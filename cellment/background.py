@@ -1,48 +1,25 @@
 import numpy as np
 
-from .functions import silver_mountain_operator, HistogramRV
+from .functions import smo, smo_rv as _smo_rv, HistogramRV
 
 
-def smo_rv(im_shape, sigma, size):
-    """Generates a random variable of the SMO operator for a given sigma and size.
-
-    Parameters
-    ----------
-    im_shape : tuple
-    sigma : scalar or sequence of scalars
-        Standard deviation for Gaussian kernel. The standard
-        deviations of the Gaussian filter are given for each axis as a
-        sequence, or as a single number, in which case it is equal for
-        all axes.
-    size : int or tuple of int
-        Averaging window size.
-
-    Returns
-    -------
-    HistogramRV
-        Subclass of scipy.stats.rv_histogram.
-    """
-    im = np.random.normal(size=im_shape)
-    smo = silver_mountain_operator(im, sigma, size)
-    return HistogramRV.from_data(smo)
-
-
-def smo_mask(im, sigma, size, threshold=0.1):
+def smo_mask(image, sigma, size, threshold=0.1, smo_rv=None):
     """Returns the mask of (some) background noise.
 
     Parameters
     ----------
-    im : numpy.array or numpy.ma.MaskedArray
+    image : numpy.ma.MaskedArray
         Image. If there are saturated pixels, they should be masked.
     sigma : scalar or sequence of scalars
-        Standard deviation for Gaussian kernel. The standard
-        deviations of the Gaussian filter are given for each axis as a
-        sequence, or as a single number, in which case it is equal for
-        all axes.
-    size : int or tuple of int
-        Averaging window parameter.
+        Standard deviation for Gaussian kernel.
+    size : int or sequence of int
+        Averaging window size.
     threshold : float
         Percentile value [0, 1] for the SMO distribution.
+    smo_rv : HistogramRV, optional
+        Distribution of SMO. If not given, it is computed.
+        It saves time to precompute it if this function is
+        called multiple times with fixed sigma and size.
 
     Returns
     -------
@@ -52,13 +29,15 @@ def smo_mask(im, sigma, size, threshold=0.1):
     -----
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
-    im = np.ma.asarray(im)
-    smo = silver_mountain_operator(im, sigma, size)
-    threshold = smo_rv(im.shape, sigma, size).ppf(threshold)
-    return (smo < threshold) & ~im.mask
+    image = np.ma.asarray(image)
+    smo_image = smo(image, sigma, size)
+    if smo_rv is None:
+        smo_rv = _smo_rv(image.ndim, sigma, size)
+    threshold = smo_rv.ppf(threshold)
+    return (smo_image < threshold) & ~image.mask
 
 
-def bg_rv(im, sigma, size, threshold=0.1):
+def bg_rv(image, sigma, size, threshold=0.1, smo_rv=None):
     """Returns the distribution of background noise.
 
     Use self.median() to get the median value,
@@ -66,17 +45,18 @@ def bg_rv(im, sigma, size, threshold=0.1):
 
     Parameters
     ----------
-    im : numpy.array or numpy.ma.MaskedArray
+    image : numpy.array or numpy.ma.MaskedArray
         Image. If there are saturated pixels, they should be masked.
     sigma : scalar or sequence of scalars
-        Standard deviation for Gaussian kernel. The standard
-        deviations of the Gaussian filter are given for each axis as a
-        sequence, or as a single number, in which case it is equal for
-        all axes.
+        Standard deviation for Gaussian kernel.
     size : int or tuple of int
-        Averaging window parameter.
+        Averaging window size.
     threshold : float
         Percentile value [0, 1] for the SMO distribution.
+    smo_rv : HistogramRV, optional
+        Distribution of SMO. If not given, it is computed.
+        It saves time to precompute it if this function is
+        called multiple times with fixed sigma and size.
 
     Returns
     -------
@@ -87,9 +67,6 @@ def bg_rv(im, sigma, size, threshold=0.1):
     -----
     Sigma and size are scale parameters, and should be less than the typical cell size.
     """
-    mask = smo_mask(im, sigma, size, threshold=threshold)
-    bg = im[mask]
-    # Remove outliers
-    p25, p50 = np.percentile(bg, (25, 50))
-    bg = bg[bg < p50 + 20 * (p50 - p25)]
+    mask = smo_mask(image, sigma, size, threshold=threshold, smo_rv=smo_rv)
+    bg = image[mask]
     return HistogramRV.from_data(bg)
