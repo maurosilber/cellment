@@ -53,4 +53,5 @@ def multi_threshold_segmentation(image, thresholds, bg_rv=None, size=3, area_thr
     graph = tracking.Labels_graph.from_labels_stack(labels)
     tracking.split_nodes(labels, graph, tuple(image for _ in range(len(labels))),
                          area_threshold=area_threshold, edge_threshold=edge_threshold)
+    # TODO: Tracking should not split merging cells here.
     return labels[0]

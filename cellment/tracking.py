@@ -12,7 +12,20 @@ Node = namedtuple('Node', ['time', 'label'])
 
 
 def count_labels(label_image, exclude_zero=False):
-    """Calculate area for each label."""
+    """Calculate area for each label.
+
+    Parameters
+    ----------
+    label_image : array_like, non-negative ints
+        Labeled image.
+    exclude_zero : bool
+        Exclude zero-label from counts. Usually corresponding to background.
+
+    Returns
+    -------
+    dict
+        A dict of {label: counts}.
+    """
     start = 1 if exclude_zero else 0
     counts = np.bincount(label_image.flat)[start:]
     labels = np.nonzero(counts)[0]
@@ -24,17 +37,22 @@ def intersection_between_labels(label_image_1, label_image_2, labels_1=None, exc
 
     Parameters
     ----------
-    label_image_1, label_image_2
+    label_image_1, label_image_2 : array_like, non-negative ints.
         Image of labels_stack.
+    labels_1 : array-like, optional
+        Labels to consider from label image 1.
+    exclude_zero : bool
+        Exclude zero-label from counts. Usually corresponding to background.
 
     Returns
     -------
     dict
         For each label_1, there's a dictionary of labels_2 and the size of their intersection.
-        {x_label_1: {y_label_1: intersection_size, ...}, ...}
+        {label_1: {label_2: intersection_size, ...}, ...}
     """
     start = 1 if exclude_zero else 0
 
+    # If no labels are given, use all available.
     if labels_1 is None:
         labels_1 = np.arange(start, 1 + label_image_1.max())  # Faster than np.unique
     else:
@@ -153,6 +171,7 @@ def trim_edges(graph, edge_threshold):
 
 def split_node(graph, labels_stack, node, mode, image):
     """Graph and labels_stack are modified in-place."""
+    label_image_1 = labels_stack[node.time]
     if mode == 'in':
         nodes = list(graph.predecessors(node))
         label_image_2 = labels_stack[node.time - 1]
@@ -163,20 +182,20 @@ def split_node(graph, labels_stack, node, mode, image):
         raise NotImplementedError('Mode must be either "in" or "out"')
 
     # Split with watershed
-    watershed_labels, s = split_with_watershed(node, image, labels_stack[node.time], nodes, label_image_2)
+    watershed_labels, s = split_with_watershed(node, image, label_image_1, nodes, label_image_2)
 
     # Relabel label_stack
-    for new_label, n in enumerate(nodes, labels_stack[node.time].max() + 1):
-        labels_stack[node.time][s][watershed_labels == n.label] = new_label
+    for new_label, n in enumerate(nodes, label_image_1.max() + 1):
+        label_image_1[s][watershed_labels == n.label] = new_label
 
     # Modify graph
     graph.remove_node(node)
-    graph.add_nodes_from_label_image(node.time, labels_stack[node.time])
+    graph.add_nodes_from_label_image(node.time, label_image_1)
     if node.time > 0:
         graph.add_edges_from_label_image(node.time - 1, labels_stack[node.time - 1],
-                                         node.time, labels_stack[node.time])
+                                         node.time, label_image_1)
     if node.time + 1 < len(labels_stack):
-        graph.add_edges_from_label_image(node.time, labels_stack[node.time],
+        graph.add_edges_from_label_image(node.time, label_image_1,
                                          node.time + 1, labels_stack[node.time + 1])
 
 
