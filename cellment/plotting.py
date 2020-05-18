@@ -7,7 +7,7 @@ from skimage.filters import gaussian
 def color_mapping(labeled_images):
     graph = nx.Graph()
     for labeled_image in labeled_images:
-        mask = (labeled_image == 0)  # Background mask
+        mask = labeled_image == 0  # Background mask
 
         # Expand labels to cover background area
         watershed = gaussian((~mask).astype(float), 10)
@@ -15,7 +15,7 @@ def color_mapping(labeled_images):
 
         # Find connected labels
         for label in np.unique(watershed):
-            mask = (watershed == label)
+            mask = watershed == label
             mask = morphology.binary_dilation(mask, morphology.square(2))  # Expand mask
             for connected_label in np.unique(watershed[mask]):
                 graph.add_edge(label, connected_label)

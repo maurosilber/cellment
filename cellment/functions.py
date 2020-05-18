@@ -97,7 +97,7 @@ def smo_rv(ndim, sigma, size, n_samples=1e6):
 
 class HistogramRV(stats.rv_histogram):
     @classmethod
-    def from_data(cls, data, bins='fd'):
+    def from_data(cls, data, bins="fd"):
         """Generates RV from data.
 
         data : array-like
@@ -121,4 +121,4 @@ class HistogramRV(stats.rv_histogram):
     def load(cls, path):
         """Loads histogram from npz file."""
         file = np.load(path)
-        return cls((file['hist'], file['bins']))
+        return cls((file["hist"], file["bins"]))

@@ -24,7 +24,9 @@ def threshold_segmentation(image, threshold, size=10):
     return morphology.label(mask.astype(int))
 
 
-def multi_threshold_segmentation(image, thresholds, bg_rv=None, size=3, area_threshold=0, edge_threshold=0.):
+def multi_threshold_segmentation(
+    image, thresholds, bg_rv=None, size=3, area_threshold=0, edge_threshold=0.0
+):
     """Performs a segmentation at multiple thresholds to try to split merged cells.
 
     A base segmentation is performed at the first threshold,
@@ -49,9 +51,16 @@ def multi_threshold_segmentation(image, thresholds, bg_rv=None, size=3, area_thr
     """
     if bg_rv is not None:
         thresholds = map(bg_rv.ppf, thresholds)
-    labels = tuple(threshold_segmentation(image, t, size=size) for t in thresholds)  # Segmentation
+    labels = tuple(
+        threshold_segmentation(image, t, size=size) for t in thresholds
+    )  # Segmentation
     graph = tracking.Labels_graph.from_labels_stack(labels)
-    tracking.split_nodes(labels, graph, tuple(image for _ in range(len(labels))),
-                         area_threshold=area_threshold, edge_threshold=edge_threshold)
+    tracking.split_nodes(
+        labels,
+        graph,
+        tuple(image for _ in range(len(labels))),
+        area_threshold=area_threshold,
+        edge_threshold=edge_threshold,
+    )
     # TODO: Tracking should not split merging cells here.
     return labels[0]
