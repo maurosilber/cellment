@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ..functions import normalized_vector, normalized_gradient
+from ..functions import normalized_gradient, normalized_vector
 
 
 class NormalizationTest(unittest.TestCase):

@@ -1,6 +1,7 @@
 import numpy as np
 
-from .functions import smo, smo_rv as _smo_rv, HistogramRV
+from .functions import HistogramRV, smo
+from .functions import smo_rv as _smo_rv
 
 
 def smo_mask(image, sigma, size, threshold=0.1, smo_rv=None):

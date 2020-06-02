@@ -1,12 +1,12 @@
-from collections import namedtuple
 import functools
+from collections import namedtuple
 
-from more_itertools import pairwise
+import networkx as nx
 import numpy as np
+from more_itertools import pairwise
 from scipy import ndimage
 from skimage import morphology
 from skimage.segmentation import watershed
-import networkx as nx
 
 Node = namedtuple("Node", ["time", "label"])
 
