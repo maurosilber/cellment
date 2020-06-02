@@ -1,11 +1,9 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# All hidden directories/files
+.*
 
-# Distribution / packaging
+# Python
+__pycache__/
 *.egg
 *.egg-info/
 build/
 dist/
-
-# VS Code
-.vscode/
