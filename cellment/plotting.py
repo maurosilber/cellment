@@ -1,7 +1,8 @@
 import networkx as nx
 import numpy as np
-from skimage import morphology
+from skimage import segmentation
 from skimage.filters import gaussian
+from skimage.morphology import binary_dilation, square
 
 
 def color_mapping(labeled_images):
@@ -11,12 +12,12 @@ def color_mapping(labeled_images):
 
         # Expand labels to cover background area
         watershed = gaussian((~mask).astype(float), 10)
-        watershed = morphology.watershed(-watershed, labeled_image)
+        watershed = segmentation.watershed(-watershed, labeled_image)
 
         # Find connected labels
         for label in np.unique(watershed):
             mask = watershed == label
-            mask = morphology.binary_dilation(mask, morphology.square(2))  # Expand mask
+            mask = binary_dilation(mask, square(2))  # Expand mask
             for connected_label in np.unique(watershed[mask]):
                 graph.add_edge(label, connected_label)
 
