@@ -64,32 +64,23 @@ def smo(input, sigma, size):
     return magnitude
 
 
-def smo_rv(ndim, sigma, size, n_samples=1e6):
+def smo_rv(shape, sigma, size):
     """Generates a random variable of the SMO operator for a given sigma and size.
 
     Parameters
     ----------
-    ndim : int
-        Dimension.
+    shape : tuple of ints
+        Dimension of the random image to be generated.
     sigma : scalar or sequence of scalars
         Standard deviation for Gaussian kernel.
     size : int or sequence of int
         Averaging window size.
-    n_samples : int
-        Number of samples to use to compute the distribution.
 
     Returns
     -------
     HistogramRV
         Subclass of scipy.stats.rv_histogram.
     """
-    # Check if sigma and size are compatible with ndim
-    sigma = _normalize_sequence(sigma, ndim)
-    size = _normalize_sequence(size, ndim)
-    # Distribute samples across dimensions
-    shape = np.ceil(sigma) * np.ceil(size)
-    shape = np.ceil(shape * np.power(n_samples / np.prod(shape), 1 / ndim)).astype(int)
-
     im = np.random.random_sample(size=shape)
     smo_image = smo(im, sigma, size)
     return HistogramRV.from_data(smo_image)
